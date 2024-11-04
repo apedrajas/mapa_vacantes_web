@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Centros Educativos</title>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore-compat.js"></script>
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="controls">
+        <div>
+            <label for="enseñanza">Enseñanza:</label>
+            <select id="enseñanza">
+                <option value="">Todas</option>
+            </select>
+
+            <label for="ciclo">Ciclo:</label>
+            <select id="ciclo">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div>
+            <label>Curso:</label>
+            <label><input type="radio" name="curso" id="curso0" value="0" checked> Todos</label>
+            <label><input type="radio" name="curso" id="curso1" value="1"> 1º</label>
+            <label><input type="radio" name="curso" id="curso2" value="2"> 2º</label>
+            <label><input type="radio" name="curso" id="curso3" value="3"> 3º</label>
+        </div>
+    </div>
+    <div id="map"></div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="../shared/config.js"></script>
+    <script src="../shared/mapUtils.js"></script>
+    <script src="public.js"></script>
+</body>
+</html>
