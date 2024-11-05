@@ -15,7 +15,10 @@ jobs:
       
       - name: Update vacantes.json
         run: |
-          echo '${{ github.event.client_payload.data }}' > data/vacantes.json
+          echo '${{ github.event.client_payload.data }}' | jq . > data/vacantes.json || {
+            echo "Error: Invalid JSON data"
+            exit 1
+          }
           
       - name: Commit and push changes
         run: |
