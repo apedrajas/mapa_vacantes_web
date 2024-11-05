@@ -129,18 +129,14 @@ function setupFileInput() {
 }
 
 async function updateGitHubData(data) {
-    const token = process.env.GITHUB_TOKEN;
-    const owner = process.env.GITHUB_OWNER;
-    const repo = process.env.GITHUB_REPO;
-
     try {
         const response = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/dispatches`,
+            `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/dispatches`,
             {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/vnd.github.v3+json',
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': `Bearer ${GITHUB_CONFIG.token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -317,13 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-function setupEventListeners() {
-    document.getElementById('enseñanza').addEventListener('change', actualizarCicloSelector);
-    document.getElementById('ciclo').addEventListener('change', actualizarMapaConFiltros);
-    document.querySelectorAll('input[name="curso"]').forEach(radio => {
-        radio.addEventListener('change', actualizarMapaConFiltros);
-    });
-}
 
 function generarIdSeguro(texto) {
     return texto.replace(/[^a-zA-Z0-9]/g, '_');

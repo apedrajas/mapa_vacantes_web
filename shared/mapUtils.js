@@ -1,4 +1,3 @@
-// Funciones compartidas entre público y admin
 function initMap(mapId) {
     const map = L.map(mapId).setView(MAP_CONFIG.initialView, MAP_CONFIG.initialZoom);
     L.tileLayer(MAP_CONFIG.tileLayer, {
@@ -8,26 +7,27 @@ function initMap(mapId) {
 }
 
 function getIcon(ciclo) {
+    const iconBase = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img';
     let iconUrl;
     switch (ciclo) {
         case 'CFGB':
-            iconUrl = 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png';
+            iconUrl = `${iconBase}/marker-icon-blue.png`;
             break;
         case 'CFGM':
-            iconUrl = 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png';
+            iconUrl = `${iconBase}/marker-icon-green.png`;
             break;
         case 'CFGS':
-            iconUrl = 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x-red.png';
+            iconUrl = `${iconBase}/marker-icon-red.png`;
             break;
         default:
-            iconUrl = 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png';
+            iconUrl = `${iconBase}/marker-icon-blue.png`;
     }
     return L.icon({
-        iconUrl: iconUrl,
+        iconUrl,
         iconSize: [25, 41],
         iconAnchor: [12, 41],
         popupAnchor: [1, -34],
-        shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+        shadowUrl: `${iconBase}/marker-shadow.png`,
         shadowSize: [41, 41]
     });
 }
@@ -41,26 +41,15 @@ function generarIdSeguro(texto) {
         .replace(/^_|_$/g, '');
 }
 
-// Funciones de utilidad para filtros
 function filtrarDatos(data, enseñanza, ciclo, curso) {
     return data.filter(item => {
-        const cumpleEnseñanzaCiclo = (enseñanza === '' || item.ENSEÑANZA === enseñanza) &&
-                                    (ciclo === '' || item.CICLO === ciclo);
-        
-        const tieneVacantesEnAlgunCurso = parseInt(item['1º']) > 0 || 
-                                         parseInt(item['2º']) > 0 || 
-                                         parseInt(item['3º']) > 0;
-        
-        let cumpleFiltroVacantes = tieneVacantesEnAlgunCurso;
-        if (curso !== '0') {
-            cumpleFiltroVacantes = parseInt(item[curso + 'º']) > 0;
-        }
-
-        return cumpleEnseñanzaCiclo && cumpleFiltroVacantes;
+        const matchEnseñanza = !enseñanza || item.ENSEÑANZA === enseñanza;
+        const matchCiclo = !ciclo || item.CICLO === ciclo;
+        const matchCurso = curso === '0' || parseInt(item[curso + 'º']) > 0;
+        return matchEnseñanza && matchCiclo && matchCurso;
     });
 }
 
-// Función para generar contenido del popup (versión básica)
 function generarContenidoPopup(centro, items, mostrarBotones = false, centroId = '') {
     return `
         <div style="font-family: Arial, sans-serif;">
