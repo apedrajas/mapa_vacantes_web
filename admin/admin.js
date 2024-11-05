@@ -17,21 +17,42 @@ function setupAuthListeners() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         
+        // Validar dominio de correo
+        if (!email.endsWith('@aragon.es')) {
+            alert('Solo se permite el acceso con correo electrónico de aragon.es');
+            return;
+        }
+        
         try {
             await auth.signInWithEmailAndPassword(email, password);
         } catch (error) {
-            alert('Error de autenticación: ' + error.message);
+            let mensajeError = 'Error de autenticación';
+            switch (error.code) {
+                case 'auth/wrong-password':
+                    mensajeError = 'Contraseña incorrecta';
+                    break;
+                case 'auth/user-not-found':
+                    mensajeError = 'Usuario no encontrado';
+                    break;
+                case 'auth/too-many-requests':
+                    mensajeError = 'Demasiados intentos fallidos. Por favor, inténtelo más tarde';
+                    break;
+                default:
+                    mensajeError += ': ' + error.message;
+            }
+            alert(mensajeError);
         }
     });
 
     auth.onAuthStateChanged((user) => {
-        if (user) {
+        if (user && user.email.endsWith('@aragon.es')) {
             document.getElementById('loginPanel').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             initializeAdminPanel();
         } else {
             document.getElementById('loginPanel').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
+            if (user) auth.signOut(); // Si el usuario no tiene el dominio correcto, cerrar sesión
         }
     });
 
@@ -50,9 +71,16 @@ async function initializeAdminPanel() {
 
 // Carga de datos
 async function cargarDatosIniciales() {
+    const user = auth.currentUser;
+    if (!user || !user.email.endsWith('@aragon.es')) {
+        auth.signOut();
+        return;
+    }
+
     try {
-        const snapshot = await db.collection('centros').get();
-        data = snapshot.docs.map(doc => doc.data());
+        const response = await fetch(DATA_URL);
+        if (!response.ok) throw new Error('Error al cargar datos');
+        data = await response.json();
         dataCopia = JSON.parse(JSON.stringify(data));
         poblarSelectores();
         mostrarTodosCentros();
@@ -101,8 +129,36 @@ function setupFileInput() {
 }
 
 async function updateGitHubData(data) {
-    // Aquí implementaremos la actualización a GitHub
-    // Usando GitHub API o Actions
+    const token = 'TU_GITHUB_TOKEN'; // Se obtendrá de una variable de entorno
+    const owner = 'TU_USUARIO';
+    const repo = 'TU_REPO';
+
+    try {
+        const response = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/dispatches`,
+            {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    event_type: 'update-data',
+                    client_payload: {
+                        data: JSON.stringify(data, null, 2)
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Error al actualizar datos en GitHub');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar los cambios');
+    }
 }
 
 // Event listeners y funciones auxiliares

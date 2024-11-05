@@ -11,7 +11,7 @@ async function initializeApp() {
     // Inicializar mapa
     map = initMap('map');
     
-    // Cargar datos desde Firestore
+    // Cargar datos desde GitHub
     await cargarDatos();
     
     // Configurar event listeners
@@ -20,8 +20,9 @@ async function initializeApp() {
 
 async function cargarDatos() {
     try {
-        const snapshot = await db.collection('centros').get();
-        data = snapshot.docs.map(doc => doc.data());
+        const response = await fetch(DATA_URL);
+        if (!response.ok) throw new Error('Error al cargar datos');
+        data = await response.json();
         poblarSelectores();
         mostrarTodosCentros();
     } catch (error) {
