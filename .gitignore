@@ -1,0 +1,21 @@
+# Configuración y claves
+shared/config.js
+
+# Dependencias
+node_modules/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de IDE
+.vscode/
+.idea/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Variables de entorno
+.env
+.env.local 

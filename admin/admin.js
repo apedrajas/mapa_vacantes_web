@@ -129,9 +129,9 @@ function setupFileInput() {
 }
 
 async function updateGitHubData(data) {
-    const token = 'TU_GITHUB_TOKEN'; // Se obtendrá de una variable de entorno
-    const owner = 'TU_USUARIO';
-    const repo = 'TU_REPO';
+    const token = process.env.GITHUB_TOKEN;
+    const owner = process.env.GITHUB_OWNER;
+    const repo = process.env.GITHUB_REPO;
 
     try {
         const response = await fetch(
@@ -140,7 +140,7 @@ async function updateGitHubData(data) {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/vnd.github.v3+json',
-                    'Authorization': `token ${token}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -153,11 +153,13 @@ async function updateGitHubData(data) {
         );
 
         if (!response.ok) {
-            throw new Error('Error al actualizar datos en GitHub');
+            throw new Error(`Error al actualizar datos en GitHub: ${response.status}`);
         }
+        
+        alert('Datos actualizados correctamente');
     } catch (error) {
         console.error('Error:', error);
-        alert('Error al guardar los cambios');
+        alert('Error al guardar los cambios: ' + error.message);
     }
 }
 
