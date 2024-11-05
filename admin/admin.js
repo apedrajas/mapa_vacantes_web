@@ -44,6 +44,8 @@ function setupAuthListeners() {
         }
     });
 
+    setupFileInput();
+
     auth.onAuthStateChanged((user) => {
         if (user && user.email.endsWith('@aragon.es')) {
             document.getElementById('loginPanel').style.display = 'none';
@@ -55,6 +57,8 @@ function setupAuthListeners() {
             if (user) auth.signOut(); // Si el usuario no tiene el dominio correcto, cerrar sesión
         }
     });
+
+    mostrarTodosCentros();
 
     document.getElementById('btnLogout').addEventListener('click', () => {
         auth.signOut();
