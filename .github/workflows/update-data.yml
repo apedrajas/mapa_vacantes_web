@@ -1,0 +1,26 @@
+name: Update Data
+
+on:
+  repository_dispatch:
+    types: [update-data]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Update vacantes.json
+        run: |
+          echo '${{ github.event.client_payload.data }}' > data/vacantes.json
+          
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/vacantes.json
+          git commit -m "Actualización automática de vacantes.json"
+          git push 
