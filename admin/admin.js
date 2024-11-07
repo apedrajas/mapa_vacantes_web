@@ -105,10 +105,16 @@ function setupFileInput() {
                     const arrayBuffer = e.target.result;
                     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const data = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                    const processedData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-                    // Convertir datos numéricos
-                    const processedData = data.map(item => ({
+                    // Validar estructura del Excel
+                    if (!validarEstructuraExcel(processedData)) {
+                        alert('El formato del archivo Excel no es válido');
+                        return;
+                    }
+
+                    // Actualizar datos localmente
+                    data = processedData.map(item => ({
                         ...item,
                         LATITUD: parseFloat(item.LATITUD) || 0,
                         LONGITUD: parseFloat(item.LONGITUD) || 0,
@@ -117,10 +123,7 @@ function setupFileInput() {
                         "3º": parseInt(item["3º"]) || 0
                     }));
 
-                    // Aquí irá el código para actualizar GitHub
-                    await updateGitHubData(processedData);
-                    
-                    // Actualizar la vista
+                    // Actualizar vista
                     mostrarTodosCentros();
                 };
                 reader.readAsArrayBuffer(file);
