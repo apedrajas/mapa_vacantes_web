@@ -17,7 +17,6 @@ function setupAuthListeners() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         
-        // Validar dominio de correo
         if (!email.endsWith('@aragon.es')) {
             alert('Solo se permite el acceso con correo electrónico de aragon.es');
             return;
@@ -44,8 +43,6 @@ function setupAuthListeners() {
         }
     });
 
-    setupFileInput();
-
     auth.onAuthStateChanged((user) => {
         if (user && user.email.endsWith('@aragon.es')) {
             document.getElementById('loginPanel').style.display = 'none';
@@ -54,18 +51,15 @@ function setupAuthListeners() {
         } else {
             document.getElementById('loginPanel').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
-            if (user) auth.signOut(); // Si el usuario no tiene el dominio correcto, cerrar sesión
+            if (user) auth.signOut();
         }
     });
-
-    mostrarTodosCentros();
 
     document.getElementById('btnLogout').addEventListener('click', () => {
         auth.signOut();
     });
 }
 
-// Inicialización del panel admin
 async function initializeAdminPanel() {
     map = initMap('map');
     setupFileInput();
@@ -73,7 +67,6 @@ async function initializeAdminPanel() {
     await cargarDatosIniciales();
 }
 
-// Carga de datos
 async function cargarDatosIniciales() {
     const user = auth.currentUser;
     if (!user || !user.email.endsWith('@aragon.es')) {
@@ -94,7 +87,6 @@ async function cargarDatosIniciales() {
     }
 }
 
-// Configuración de entrada de archivo
 function setupFileInput() {
     document.getElementById('fileInput').addEventListener('change', async (event) => {
         const file = event.target.files[0];
@@ -107,13 +99,11 @@ function setupFileInput() {
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const processedData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-                    // Validar estructura del Excel
                     if (!validarEstructuraExcel(processedData)) {
                         alert('El formato del archivo Excel no es válido');
                         return;
                     }
 
-                    // Actualizar datos localmente
                     data = processedData.map(item => ({
                         ...item,
                         LATITUD: parseFloat(item.LATITUD) || 0,
@@ -123,7 +113,6 @@ function setupFileInput() {
                         "3º": parseInt(item["3º"]) || 0
                     }));
 
-                    // Actualizar vista
                     mostrarTodosCentros();
                 };
                 reader.readAsArrayBuffer(file);
@@ -135,38 +124,6 @@ function setupFileInput() {
     });
 }
 
-async function updateGitHubData(data) {
-    try {
-        const response = await fetch(
-            `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/dispatches`,
-            {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Authorization': `Bearer ${GITHUB_CONFIG.token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    event_type: 'update-data',
-                    client_payload: {
-                        data: JSON.stringify(data, null, 2)
-                    }
-                })
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(`Error al actualizar datos en GitHub: ${response.status}`);
-        }
-        
-        alert('Datos actualizados correctamente');
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al guardar los cambios: ' + error.message);
-    }
-}
-
-// Event listeners y funciones auxiliares
 function setupEventListeners() {
     document.getElementById('enseñanza').addEventListener('change', actualizarCicloSelector);
     document.getElementById('ciclo').addEventListener('change', actualizarMapaConFiltros);
@@ -176,14 +133,11 @@ function setupEventListeners() {
     document.getElementById('btnGuardar').addEventListener('click', guardarCambios);
 }
 
-// ... Resto de funciones (poblarSelectores, actualizarCicloSelector, etc.) 
-// similares a las del archivo original pero adaptadas para trabajar con Firebase
-
 function poblarSelectores() {
     const enseñanzaSelect = document.getElementById('enseñanza');
     const cicloSelect = document.getElementById('ciclo');
 
-    const enseñanzas = [...new Set(data.map(item => item.ENSEÑANZA))];
+    const enseñanzas = [...new Set(data.map(item => item.ENSEÑANZA))].sort();
 
     enseñanzaSelect.innerHTML = '<option value="">Todas</option>';
     cicloSelect.innerHTML = '<option value="">Todos</option>';
@@ -205,7 +159,7 @@ function actualizarCicloSelector() {
         : [...new Set(data.filter(item => item.ENSEÑANZA === enseñanzaSeleccionada).map(item => item.CICLO))];
 
     cicloSelect.innerHTML = '<option value="">Todos</option>';
-    ciclos.forEach(ciclo => {
+    ciclos.sort().forEach(ciclo => {
         const option = document.createElement('option');
         option.value = ciclo;
         option.textContent = ciclo;
@@ -226,13 +180,16 @@ function actualizarMapaConFiltros() {
             latlng: marker.getLatLng()
         }));
 
-    const filteredData = data.filter(item => {
-        const matchEnseñanza = !enseñanzaSeleccionada || item.ENSEÑANZA === enseñanzaSeleccionada;
-        const matchCiclo = !cicloSeleccionado || item.CICLO === cicloSeleccionado;
+    const filteredData = filtrarDatos(data, enseñanzaSeleccionada, cicloSeleccionado, cursoSeleccionado);
+    actualizarMapa(filteredData, popupsAbiertos);
+}
+
+function filtrarDatos(data, enseñanza, ciclo, curso) {
+    return data.filter(item => {
+        const matchEnseñanza = !enseñanza || item.ENSEÑANZA === enseñanza;
+        const matchCiclo = !ciclo || item.CICLO === ciclo;
         return matchEnseñanza && matchCiclo;
     });
-
-    actualizarMapa(filteredData, popupsAbiertos);
 }
 
 function actualizarMapa(filteredData, popupsAbiertos = []) {
@@ -292,7 +249,6 @@ function modificarVacantes(centro, ciclo, turno, curso, cambio, centroId, event)
         vacantesElement.textContent = nuevoValor;
         item[curso] = nuevoValor;
         
-        // Marcar como modificado
         const itemOriginal = dataCopia.find(i => 
             i.CENTRO === centro && 
             i.CICLO === ciclo && 
@@ -304,9 +260,6 @@ function modificarVacantes(centro, ciclo, turno, curso, cambio, centroId, event)
         } else {
             vacantesElement.classList.add('modified');
         }
-
-        // Aquí llamaremos a la función de actualización en GitHub
-        updateGitHubData(data);
     }
 }
 
@@ -314,13 +267,71 @@ function mostrarTodosCentros() {
     actualizarMapaConFiltros();
 }
 
-// Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
-    initMap();
-    setupEventListeners();
-});
-
-
 function generarIdSeguro(texto) {
     return texto.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function validarEstructuraExcel(data) {
+    if (!Array.isArray(data) || data.length === 0) return false;
+    
+    const camposRequeridos = ['CENTRO', 'ENSEÑANZA', 'CICLO', 'TURNO', 'LATITUD', 'LONGITUD', '1º', '2º', '3º'];
+    
+    return data.every(item => 
+        camposRequeridos.every(campo => 
+            Object.prototype.hasOwnProperty.call(item, campo)
+        )
+    );
+}
+
+async function updateGitHubData(data) {
+    try {
+        const response = await fetch(
+            `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/dispatches`,
+            {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': `Bearer ${GITHUB_CONFIG.token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    event_type: 'update-data',
+                    client_payload: {
+                        data: JSON.stringify(data, null, 2)
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Error al actualizar datos en GitHub: ${response.status}`);
+        }
+        
+        alert('Datos actualizados correctamente');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar los cambios: ' + error.message);
+    }
+}
+
+function guardarCambios() {
+    try {
+        const hayModificaciones = document.querySelectorAll('.modified').length > 0;
+        
+        if (!hayModificaciones) {
+            alert('No hay cambios pendientes para guardar');
+            return;
+        }
+
+        if (confirm('¿Estás seguro de que deseas guardar los cambios?')) {
+            updateGitHubData(data);
+            dataCopia = JSON.parse(JSON.stringify(data));
+            document.querySelectorAll('.modified').forEach(element => {
+                element.classList.remove('modified');
+            });
+        }
+    } catch (error) {
+        console.error('Error al guardar cambios:', error);
+        alert('Error al guardar los cambios');
+    }
 }
