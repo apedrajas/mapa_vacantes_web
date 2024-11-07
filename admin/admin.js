@@ -5,6 +5,9 @@ let dataCopia = [];
 let nombreArchivoOriginal = '';
 let ultimoNumeroOrden = -1;
 
+// Inicializar Firebase Auth
+const auth = firebase.auth();
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     setupAuthListeners();
