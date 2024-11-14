@@ -5,62 +5,28 @@ let dataCopia = [];
 let nombreArchivoOriginal = '';
 let ultimoNumeroOrden = -1;
 
-// Inicializar Firebase Auth
-const auth = firebase.auth();
-
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-    setupAuthListeners();
+    checkSession();
 });
 
-// Autenticación
-function setupAuthListeners() {
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+// Verificación de sesión
+async function checkSession() {
+    try {
+        const response = await fetch(CONFIG.api.checkSession);
+        const data = await response.json();
         
-        if (!email.endsWith('@aragon.es')) {
-            alert('Solo se permite el acceso con correo electrónico de aragon.es');
-            return;
-        }
-        
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-        } catch (error) {
-            let mensajeError = 'Error de autenticación';
-            switch (error.code) {
-                case 'auth/wrong-password':
-                    mensajeError = 'Contraseña incorrecta';
-                    break;
-                case 'auth/user-not-found':
-                    mensajeError = 'Usuario no encontrado';
-                    break;
-                case 'auth/too-many-requests':
-                    mensajeError = 'Demasiados intentos fallidos. Por favor, inténtelo más tarde';
-                    break;
-                default:
-                    mensajeError += ': ' + error.message;
-            }
-            alert(mensajeError);
-        }
-    });
-
-    auth.onAuthStateChanged((user) => {
-        if (user && user.email.endsWith('@aragon.es')) {
+        if (data.authenticated) {
             document.getElementById('loginPanel').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             initializeAdminPanel();
         } else {
-            document.getElementById('loginPanel').style.display = 'block';
-            document.getElementById('adminPanel').style.display = 'none';
-            if (user) auth.signOut();
+            window.location.href = 'login.php';
         }
-    });
-
-    document.getElementById('btnLogout').addEventListener('click', () => {
-        auth.signOut();
-    });
+    } catch (error) {
+        console.error('Error:', error);
+        window.location.href = 'login.php';
+    }
 }
 
 async function initializeAdminPanel() {
@@ -71,14 +37,8 @@ async function initializeAdminPanel() {
 }
 
 async function cargarDatosIniciales() {
-    const user = auth.currentUser;
-    if (!user || !user.email.endsWith('@aragon.es')) {
-        auth.signOut();
-        return;
-    }
-
     try {
-        const response = await fetch(DATA_URL);
+        const response = await fetch(CONFIG.api.data);
         if (!response.ok) throw new Error('Error al cargar datos');
         data = await response.json();
         dataCopia = JSON.parse(JSON.stringify(data));
@@ -87,6 +47,50 @@ async function cargarDatosIniciales() {
     } catch (error) {
         console.error('Error al cargar datos:', error);
         alert('Error al cargar los datos');
+    }
+}
+
+// Función para cerrar sesión
+async function logout() {
+    try {
+        await fetch(CONFIG.api.logout);
+        window.location.href = 'login.php';
+    } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+    }
+}
+
+// Actualizar la función guardarCambios
+async function guardarCambios() {
+    try {
+        const hayModificaciones = document.querySelectorAll('.modified').length > 0;
+        
+        if (!hayModificaciones) {
+            alert('No hay cambios pendientes para guardar');
+            return;
+        }
+
+        if (confirm('¿Estás seguro de que deseas guardar los cambios?')) {
+            const response = await fetch(CONFIG.api.update, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) throw new Error('Error al guardar los cambios');
+
+            dataCopia = JSON.parse(JSON.stringify(data));
+            document.querySelectorAll('.modified').forEach(element => {
+                element.classList.remove('modified');
+            });
+            
+            alert('Cambios guardados correctamente');
+        }
+    } catch (error) {
+        console.error('Error al guardar cambios:', error);
+        alert('Error al guardar los cambios');
     }
 }
 
@@ -317,24 +321,24 @@ async function updateGitHubData(data) {
     }
 }
 
-function guardarCambios() {
+async function login(email, password) {
     try {
-        const hayModificaciones = document.querySelectorAll('.modified').length > 0;
+        const response = await fetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
         
-        if (!hayModificaciones) {
-            alert('No hay cambios pendientes para guardar');
-            return;
-        }
-
-        if (confirm('¿Estás seguro de que deseas guardar los cambios?')) {
-            updateGitHubData(data);
-            dataCopia = JSON.parse(JSON.stringify(data));
-            document.querySelectorAll('.modified').forEach(element => {
-                element.classList.remove('modified');
-            });
+        if (!response.ok) throw new Error('Error de autenticación');
+        
+        const data = await response.json();
+        if (data.success) {
+            initializeAdminPanel();
         }
     } catch (error) {
-        console.error('Error al guardar cambios:', error);
-        alert('Error al guardar los cambios');
+        console.error('Error:', error);
+        alert('Error de autenticación');
     }
 }

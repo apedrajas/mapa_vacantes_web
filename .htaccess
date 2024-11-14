@@ -1,0 +1,42 @@
+# Proteger archivos sensibles
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "(^#.*#|\.(bak|config|dist|fla|inc|ini|log|psd|sh|sql|sw[op])|~)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger directorios
+Options -Indexes
+
+# Proteger data/users.json
+<Files "users.json">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Redirigir errores
+ErrorDocument 404 /404.html
+ErrorDocument 403 /403.html
+
+# Forzar HTTPS
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Proteger acceso a API
+<Files "*.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# Headers de seguridad
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options nosniff
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Frame-Options SAMEORIGIN
+    Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule> 
