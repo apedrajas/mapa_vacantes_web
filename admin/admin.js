@@ -7,33 +7,27 @@ let ultimoNumeroOrden = -1;
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-    checkSession();
+    initializeAdminPanel();
 });
 
-// Verificación de sesión
-async function checkSession() {
+async function initializeAdminPanel() {
     try {
         const response = await fetch(CONFIG.api.checkSession);
-        const data = await response.json();
+        const sessionData = await response.json();
         
-        if (data.authenticated) {
-            document.getElementById('loginPanel').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            initializeAdminPanel();
-        } else {
+        if (!sessionData.authenticated) {
             window.location.href = 'login.php';
+            return;
         }
+
+        map = initMap('map');
+        setupFileInput();
+        setupEventListeners();
+        await cargarDatosIniciales();
     } catch (error) {
         console.error('Error:', error);
         window.location.href = 'login.php';
     }
-}
-
-async function initializeAdminPanel() {
-    map = initMap('map');
-    setupFileInput();
-    setupEventListeners();
-    await cargarDatosIniciales();
 }
 
 async function cargarDatosIniciales() {
@@ -95,38 +89,32 @@ async function guardarCambios() {
 }
 
 function setupFileInput() {
-    document.getElementById('fileInput').addEventListener('change', async (event) => {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput) return;
+    
+    fileInput.addEventListener('change', async (event) => {
         const file = event.target.files[0];
-        if (file) {
-            try {
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    const arrayBuffer = e.target.result;
-                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const processedData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        if (!file) return;
 
-                    if (!validarEstructuraExcel(processedData)) {
-                        alert('El formato del archivo Excel no es válido');
-                        return;
-                    }
+        const formData = new FormData();
+        formData.append('file', file);
 
-                    data = processedData.map(item => ({
-                        ...item,
-                        LATITUD: parseFloat(item.LATITUD) || 0,
-                        LONGITUD: parseFloat(item.LONGITUD) || 0,
-                        "1º": parseInt(item["1º"]) || 0,
-                        "2º": parseInt(item["2º"]) || 0,
-                        "3º": parseInt(item["3º"]) || 0
-                    }));
+        try {
+            const response = await fetch(CONFIG.api.upload, {
+                method: 'POST',
+                body: formData
+            });
 
-                    mostrarTodosCentros();
-                };
-                reader.readAsArrayBuffer(file);
-            } catch (error) {
-                console.error('Error al procesar el archivo:', error);
-                alert('Error al procesar el archivo');
+            if (!response.ok) throw new Error('Error al subir el archivo');
+            
+            const data = await response.json();
+            if (data.success) {
+                await cargarDatosIniciales();
+                alert('Archivo cargado correctamente');
             }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al cargar el archivo');
         }
     });
 }

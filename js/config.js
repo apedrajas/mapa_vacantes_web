@@ -11,6 +11,7 @@ const CONFIG = {
         data: '/api/data.php',
         update: '/api/update.php',
         checkSession: '/api/check-session.php',
-        logout: '/api/logout.php'
+        logout: '/api/logout.php',
+        upload: '/api/upload.php'
     }
 };
